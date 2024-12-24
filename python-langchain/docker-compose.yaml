@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+  # python-app:
+  #   build:
+  #     context: .
+  #     dockerfile: ./Dockerfile
+  #   image: application
+  #   container_name: application
+  #   volumes:
+  #     - .:/app/
+  #   networks:
+  #     - net
+
+  chroma:
+    image: ghcr.io/chroma-core/chroma:latest
+    volumes:
+      - ./.docker/chroma/index:/chroma/.chroma/index
+    ports:
+      - 8000:8000
+    networks:
+      - net
+
+networks:
+  net:
+    driver: bridge

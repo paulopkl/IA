@@ -1,0 +1,42 @@
+version: '3.8'
+
+x-default-vars: &default-vars
+  db_name: "db_test"
+  sa_password: "@dmin123"
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    # hostname: sqlserver
+    environment:
+      SA_PASSWORD: *default-vars.sa_password
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - ./.docker/mssql/data:/var/opt/mssql/data
+      - ./.docker/mssql/log:/var/opt/mssql/log
+      - ./.docker/mssql/secrets:/var/opt/mssql/secrets
+      - ./.docker/mssql/backups:/var/opt/mssql/backups
+    healthcheck:
+      # test: ["CMD-SHELL", "curl -f http://localhost:1433 || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P @dmin123 -Q 'SELECT 1'"]
+      interval: 5s
+      retries: 5
+      start_period: 10s
+      timeout: 30s
+
+  sqlserver.configurator:
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    volumes:
+      - ./.docker/init-scripts:/docker-entrypoint-initdb.d
+    command: >
+      bash -c '
+      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P @dmin123 -d master -i docker-entrypoint-initdb.d/init.sql;
+      echo "All done!";
+      '
+    
